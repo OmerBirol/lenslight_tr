@@ -29,45 +29,48 @@
 
     /* Mobil görünüm */
     @media (max-width: 768px) {
-      /* Orta kolon genişliği mobilde sıkıntı çıkarmasın */
-      .header-area .col-md-8.col-sm-9 {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-      }
+  .header-area .col-md-8.col-sm-9 {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
 
-      .nav-toggler {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
+  .nav-toggler {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-      /* Mobilde menü kapalıyken gizli */
-      .site-navbar ul {
-        display: none;
-        position: absolute;
-        top: 58px; /* header yüksekliğine göre gerekirse oynat */
-        right: 0;
-        left: 0;
-        background: #fff;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0;
-        border-top: 1px solid #eee;
-        z-index: 9999;
-      }
+  /* ✅ ESKİ: position:absolute ... (BUNU KALDIR) */
 
-      .site-navbar ul li a {
-        display: block;
-        padding: 14px 18px;
-        border-bottom: 1px solid #f2f2f2;
-      }
+  /* ✅ YENİ: menü ekranın içine sabitlenir */
+  .site-navbar ul {
+    display: none;
+    position: fixed;     /* ✅ önemli */
+    top: 70px;           /* header yüksekliğine göre 60-80 arası ayarla */
+    left: 0;             /* ✅ taşmayı bitirir */
+    right: 0;            /* ✅ taşmayı bitirir */
+    background: #fff;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    border-top: 1px solid #eee;
+    z-index: 99999;
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+  }
 
-      /* Açık hali */
-      .site-navbar.open ul {
-        display: flex;
-      }
-    }
+  .site-navbar ul li a {
+    display: block;
+    padding: 14px 18px;
+    border-bottom: 1px solid #f2f2f2;
+  }
+
+  .site-navbar.open ul {
+    display: flex;
+  }
+}
+
   </style>
 
   <div class="container-fluid">
