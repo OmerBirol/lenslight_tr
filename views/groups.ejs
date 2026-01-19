@@ -1,0 +1,25 @@
+<%- include("partials/_header") %>
+<%- include("partials/_menu", { link: "groups" }) %>
+
+<div class="container" style="margin-top:30px; max-width:900px;">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2>Gruplar</h2>
+    <a href="/groups/new" style="padding:10px 14px; border:1px solid #ddd; border-radius:8px;">Grup Oluştur</a>
+  </div>
+
+  <% if (!groups || groups.length === 0) { %>
+    <p style="margin-top:15px;">Henüz grup yok.</p>
+  <% } else { %>
+    <ul style="padding-left:0; list-style:none; margin-top:15px;">
+      <% groups.forEach(g => { %>
+        <li style="padding:12px 0; border-bottom:1px solid #eee;">
+          <a href="/groups/<%= g._id %>" style="text-decoration:none;">
+            <strong><%= g.name %></strong>
+          </a>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</div>
+
+<%- include("partials/_footer") %>

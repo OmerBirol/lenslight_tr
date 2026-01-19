@@ -19,7 +19,8 @@ import { v2 as cloudinary } from "cloudinary";
 
 // ✅ Mesajı socket üzerinden DB'ye kaydetmek için:
 import Message from "./models/messageModel.js";
-
+import groupRoutes from "./routes/groupRoutes.js";
+import inviteRoutes from "./routes/inviteRoutes.js";
 dotenv.config();
 
 cloudinary.config({
@@ -110,7 +111,8 @@ app.use("/", pageRoute);
 app.use("/photos", photoRoutes);
 app.use("/users", userRoute);
 app.use(messageRoutes);
-
+app.use(groupRoutes);
+app.use(inviteRoutes);
 // ✅ app.listen yerine server.listen
 server.listen(port, () => {
   console.log(`Application running on port: ${port}`);
