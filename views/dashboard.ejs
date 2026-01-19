@@ -8,47 +8,118 @@
     object-fit: cover;
   }
 
-  /* ✅ Bio kartı ortalı ve düzgün */
+  /* ✅ Bio alanı (kart gibi) */
   .bio-card{
-    max-width: 760px;
-    margin: 0 auto;
+    max-width: 900px;
+    margin: 30px auto 0;
+    padding: 50px 40px;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    border-radius: 6px;
+    text-align: center;
   }
 
   .bio-text{
-    margin: 0;
-    line-height: 1.7;
-    word-break: break-word;
+    margin: 0 0 18px;
+    font-size: 20px;
+    line-height: 1.6;
   }
 
+  /* ✅ Edit + Save buton alanı */
+  .bio-actions{
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* ✅ Butonlar aynı boy olsun (Save Bio küçük kalmasın) */
+  .bio-actions .read_more{
+    min-width: 220px;
+    height: 58px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    padding: 0 24px;
+  }
+
+  /* ✅ Textarea (bio kartının içinde dursun) */
   .bio-editor{
-    margin-top: 18px;
+    max-width: 720px;
+    margin: 18px auto 0;
+    display: none; /* Edit Bio basınca açılacak */
   }
 
   .bio-editor textarea{
     width: 100%;
-    min-height: 130px;
+    height: 140px;
     resize: vertical;
   }
 
-  .bio-actions{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    gap:16px;
-    margin-top: 16px;
-    flex-wrap: wrap;
-  }
-
-  .hidden{
-    display:none !important;
-  }
-
-  /* Add New Photo ortalı ve biraz aşağıda */
+  /* ✅ Add New Photo -> Edit Bio'nun ALTINDA ve ORTALI */
   .add-photo-wrap{
-  margin-top: 25px;      /* Edit Bio’nun altına gelsin */
-  margin-left: 437px;    /* Sağa kaydır */
-  text-align: left;      /* Kaydırma düzgün dursun */
-}
+    text-align: center;
+    margin-top: 22px;
+    margin-right: 15px;
+  }
+
+  .add-photo-wrap .read_more{
+    min-width: 260px;
+    height: 58px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 26px;
+  }
+
+  /* ✅ Mobil düzen */
+  @media (max-width: 768px){
+    .avatar{
+      width: 120px;
+      height: 120px;
+    }
+
+    .bio-card{
+      margin: 18px 12px 0;
+      padding: 28px 18px;
+    }
+
+    .bio-text{
+      font-size: 18px;
+    }
+
+    .bio-actions{
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .bio-actions .read_more{
+      width: 100%;
+      max-width: 360px;
+      min-width: unset;
+    }
+
+    .add-photo-wrap{
+      margin-top: 18px;
+      padding: 0 12px;
+    }
+
+    .add-photo-wrap .read_more{
+      width: 100%;
+      max-width: 360px;
+      min-width: unset;
+    }
+
+    /* ✅ Olası kesilme sorunlarına karşı */
+    .customers, .titlepage, .satteb{
+      overflow: visible !important;
+      height: auto !important;
+      min-height: unset !important;
+    }
+  }
 </style>
 
 <!-- loader -->
@@ -59,16 +130,15 @@
 </div>
 <!-- end loader -->
 
-<%- include("partials/_menu", { link: "about" }) %>
+<%- include("partials/_menu", { link: "dashboard" }) %>
 
 <div class="customers">
   <div class="container">
-
     <div class="row">
       <div class="col-md-12">
         <div class="titlepage text_align_center">
 
-          <!-- ✅ AVATAR GÖSTER -->
+          <!-- ✅ AVATAR -->
           <div class="text_align_center" style="margin-bottom:20px;">
             <img
               src="<%= user.avatar ? user.avatar : '/images/team1.jpg' %>"
@@ -77,7 +147,7 @@
             />
           </div>
 
-          <!-- ✅ AVATAR DEĞİŞTİR BUTONU -->
+          <!-- ✅ AVATAR CHANGE -->
           <div class="text_align_center" style="margin-bottom: 15px;">
             <button data-toggle="modal" data-target=".avatar-modal" type="button" class="read_more">
               Change Profile Photo
@@ -85,65 +155,63 @@
           </div>
 
           <h2>Welcome <%= user.username %></h2>
+
         </div>
       </div>
     </div>
 
-    <!-- ✅ BIO KUTUSU (metin + textarea aynı kutuda) -->
-    <div class="row" style="margin-top: 10px;">
+    <!-- ✅ BIO CARD -->
+    <div class="row">
       <div class="col-md-12">
-        <div class="satteb text_align_center bio-card">
-
-          <!-- BIO metni -->
-          <p class="bio-text" id="bioText">
+        <div class="bio-card">
+          <p class="bio-text">
             <%= user.bio && user.bio.length > 0
                 ? user.bio
                 : "Henüz kendin hakkında bir şey yazmadın." %>
           </p>
 
-          <!-- BIO editor (başta gizli) -->
-          <form id="bioForm" class="bio-editor hidden" action="/users/bio" method="POST">
+          <!-- ✅ Buttons: Edit + Save -->
+          <div class="bio-actions">
+            <button type="button" class="read_more" id="editBioBtn">Edit Bio</button>
+
+            <!-- Save Bio form -->
+            <form action="/users/bio" method="POST" id="bioForm" style="margin:0;">
+              <button type="submit" class="read_more" id="saveBioBtn" style="display:none;">Save Bio</button>
+            </form>
+          </div>
+
+          <!-- ✅ BIO EDITOR -->
+          <div class="bio-editor" id="bioEditor">
             <textarea
               name="bio"
+              form="bioForm"
               class="form_control"
               placeholder="Kendin hakkında bir şeyler yaz..."
             ><%= user.bio ? user.bio : "" %></textarea>
+          </div>
 
-            <div class="bio-actions">
-              <button type="button" class="read_more" id="cancelBioBtn">Cancel</button>
-              <button type="submit" class="read_more">Save Bio</button>
-            </div>
-          </form>
-
-          <!-- ✅ Edit + Save (edit moduna geçiş) -->
-          <div class="bio-actions" id="bioButtons">
-            <button type="button" class="read_more" id="editBioBtn">Edit Bio</button>
+          <!-- ✅ Add New Photo -->
+          <div class="add-photo-wrap">
+            <button
+              data-toggle="modal"
+              data-target=".bd-example-modal-lg"
+              type="button"
+              class="read_more"
+            >
+              Add New Photo
+            </button>
           </div>
 
         </div>
       </div>
     </div>
 
-    <!-- ✅ Add New Photo (edit/save altında ortalı) -->
-    <div class="row">
-      <div class="col-md-12 add-photo-wrap">
-        <button
-          data-toggle="modal"
-          data-target=".bd-example-modal-lg"
-          type="button"
-          class="read_more"
-          
-        >
-          Add New Photo
-        </button>
-      </div>
-    </div>
-
   </div>
 </div>
-<!-- end customers  -->
+<!-- end customers -->
 
-<% if (photos.length > 0) { %>
+<!-- ✅ MY PHOTOS -->
+<% if (photos && photos.length > 0) { %>
 <div class="gallery">
   <div class="container_with">
     <div class="row">
@@ -183,6 +251,7 @@
 </div>
 <% } %>
 
+<!-- ✅ FOLLOWERS -->
 <% if (user.followers && user.followers.length > 0) { %>
 <div class="team">
   <div class="container_with">
@@ -219,6 +288,7 @@
 </div>
 <% } %>
 
+<!-- ✅ FOLLOWINGS -->
 <% if (user.followings && user.followings.length > 0) { %>
 <div class="team">
   <div class="container_with">
@@ -297,7 +367,7 @@
   </div>
 </div>
 
-<!-- EXISTING PHOTO UPLOAD MODAL -->
+<!-- ✅ PHOTO UPLOAD MODAL -->
 <div class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel"
   aria-hidden="true">
   <div class="modal-dialog modal-lg">
@@ -311,7 +381,7 @@
         <div class="row">
           <div class="col-md-12 ">
             <div class="text_align_center">
-              <h2 style="font-size: 30px; margin-bottom: 50px; color: #D43A8E;">
+              <h2 style="font-size: 30px; margin-bottom: 20px; color: #D43A8E;">
                 Add New Photo
               </h2>
             </div>
@@ -328,7 +398,7 @@
                 </div>
 
                 <div style="margin-bottom: 20px ;" class="col-md-12">
-                  <input type="file" name="image" class="form-control-file">
+                  <input type="file" name="image" class="form-control-file" required>
                 </div>
 
                 <div class="col-md-12">
@@ -346,23 +416,19 @@
 </div>
 
 <script>
+  // ✅ Edit Bio tıklanınca textarea + Save Bio aç
   const editBtn = document.getElementById("editBioBtn");
-  const cancelBtn = document.getElementById("cancelBioBtn");
-  const bioText = document.getElementById("bioText");
-  const bioForm = document.getElementById("bioForm");
-  const bioButtons = document.getElementById("bioButtons");
+  const editor = document.getElementById("bioEditor");
+  const saveBtn = document.getElementById("saveBioBtn");
 
-  editBtn.addEventListener("click", () => {
-    bioText.classList.add("hidden");
-    bioButtons.classList.add("hidden");
-    bioForm.classList.remove("hidden");
-  });
-
-  cancelBtn.addEventListener("click", () => {
-    bioForm.classList.add("hidden");
-    bioText.classList.remove("hidden");
-    bioButtons.classList.remove("hidden");
-  });
+  if (editBtn && editor && saveBtn) {
+    editBtn.addEventListener("click", () => {
+      const isOpen = editor.style.display === "block";
+      editor.style.display = isOpen ? "none" : "block";
+      saveBtn.style.display = isOpen ? "none" : "inline-flex";
+      editBtn.textContent = isOpen ? "Edit Bio" : "Close Editor";
+    });
+  }
 </script>
 
 <%- include("partials/_footer") %>
