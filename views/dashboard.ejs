@@ -172,13 +172,21 @@
 
           <!-- ✅ Buttons: Edit + Save -->
           <div class="bio-actions">
-            <button type="button" class="read_more" id="editBioBtn">Edit Bio</button>
-
-            <!-- Save Bio form -->
-            <form action="/users/bio" method="POST" id="bioForm" style="margin:0;">
-              <button type="submit" class="read_more" id="saveBioBtn" style="display:none;">Save Bio</button>
-            </form>
+            <% if (currentUser && currentUser._id.toString() === user._id.toString()) { %>
+          
+              <button type="button" class="read_more" id="editBioBtn">
+                Edit Bio
+              </button>
+          
+              <form action="/users/bio" method="POST" id="bioForm" style="margin:0;">
+                <button type="submit" class="read_more" id="saveBioBtn" style="display:none;">
+                  Save Bio
+                </button>
+              </form>
+          
+            <% } %>
           </div>
+          
 
           <!-- ✅ BIO EDITOR -->
           <div class="bio-editor" id="bioEditor">

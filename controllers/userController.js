@@ -88,6 +88,7 @@ const getDashboardPage = async (req, res) => {
     link: 'dashboard',
     photos,
     user,
+    currentUser: res.locals.user,
   });
 };
 
