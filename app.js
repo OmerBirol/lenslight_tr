@@ -90,7 +90,8 @@ io.on("connection", (socket) => {
 });
 
 app.set("view engine", "ejs");
-
+app.set("io", io);
+app.set("onlineUsers", onlineUsers);
 app.use(express.static("public"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

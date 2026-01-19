@@ -4,16 +4,27 @@
 <div class="container" style="margin-top:30px; max-width:800px;">
   <h3><%= otherUser.username %> ile sohbet</h3>
 
-  <div id="chatBox" style="border:1px solid #ddd; padding:10px; min-height:300px; border-radius:8px; overflow-y:auto;">
+  <div id="chatBox" style="border:1px solid #ddd; padding:10px; min-height:320px; border-radius:8px; overflow-y:auto;">
     <% if (!messages || messages.length === 0) { %>
       <p>Henüz mesaj yok. İlk mesajı sen at 🙂</p>
     <% } %>
 
     <% (messages || []).forEach(m => { %>
-      <div style="margin:6px 0; text-align:<%= String(m.sender) === String(me) ? 'right' : 'left' %>;">
-        <span style="display:inline-block; padding:8px 12px; border-radius:10px; border:1px solid #ccc; max-width:80%;">
-          <%= m.text %>
-        </span>
+      <div style="margin:10px 0; text-align:<%= String(m.sender) === String(me) ? 'right' : 'left' %>;">
+        <% if (m.type === "image" && m.imageUrl) { %>
+          <a href="<%= m.imageUrl %>" target="_blank" rel="noreferrer">
+            <img
+              src="<%= m.imageUrl %>"
+              alt="photo"
+              style="max-width:260px; border-radius:10px; border:1px solid #ddd;"
+            />
+          </a>
+        <% } else { %>
+          <span style="display:inline-block; padding:8px 12px; border-radius:10px; border:1px solid #ccc; max-width:80%;">
+            <%= m.text %>
+          </span>
+        <% } %>
+
         <div style="font-size:12px; opacity:.6; margin-top:2px;">
           <%= new Date(m.createdAt).toLocaleString() %>
         </div>
@@ -21,15 +32,13 @@
     <% }) %>
   </div>
 
-  <!-- Not: method/action kalsın; JS preventDefault ile sayfa yenilenmeyecek.
-       JS kapalı olursa fallback olarak POST ile yine çalışır. -->
+  <!-- Text mesaj (Socket.IO) -->
   <form id="chatForm" method="POST" action="/messages/<%= otherUser._id %>" style="margin-top:10px; display:flex; gap:10px;">
     <input
       id="chatInput"
       type="text"
       name="text"
       placeholder="Mesaj yaz..."
-      required
       maxlength="2000"
       style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px;"
       autocomplete="off"
@@ -38,6 +47,24 @@
       Gönder
     </button>
   </form>
+
+  <!-- Foto gönder (HTTP upload) -->
+  <form
+    id="imageForm"
+    method="POST"
+    action="/messages/<%= otherUser._id %>/image"
+    enctype="multipart/form-data"
+    style="margin-top:10px; display:flex; gap:10px; align-items:center;"
+  >
+    <input id="imageInput" type="file" name="image" accept="image/*" />
+    <button type="submit" style="padding:10px 16px; border-radius:8px; border:0;">
+      Foto Gönder
+    </button>
+  </form>
+
+  <small style="display:block; margin-top:6px; opacity:.7;">
+    Not: Foto gönderince sayfa yenilenebilir. (İstersen bunu da socket ile yenilemesiz yaparız.)
+  </small>
 </div>
 
 <%- include("partials/_footer") %>
@@ -50,16 +77,15 @@
     const myId = "<%= me %>";
     const otherId = "<%= otherUser._id %>";
 
-    // server'a kim olduğumu söyle
     socket.emit("auth", myId);
 
     const form = document.getElementById("chatForm");
     const input = document.getElementById("chatInput");
     const box = document.getElementById("chatBox");
 
-    function appendMessage(text, isMine, createdAt) {
+    function appendText(text, isMine, createdAt) {
       const wrap = document.createElement("div");
-      wrap.style.margin = "6px 0";
+      wrap.style.margin = "10px 0";
       wrap.style.textAlign = isMine ? "right" : "left";
 
       const bubble = document.createElement("span");
@@ -79,7 +105,40 @@
       }
 
       wrap.appendChild(bubble);
-      if (createdAt) wrap.appendChild(time);
+      wrap.appendChild(time);
+      box.appendChild(wrap);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function appendImage(url, isMine, createdAt) {
+      const wrap = document.createElement("div");
+      wrap.style.margin = "10px 0";
+      wrap.style.textAlign = isMine ? "right" : "left";
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noreferrer";
+
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = "photo";
+      img.style.maxWidth = "260px";
+      img.style.borderRadius = "10px";
+      img.style.border = "1px solid #ddd";
+
+      a.appendChild(img);
+
+      const time = document.createElement("div");
+      time.style.fontSize = "12px";
+      time.style.opacity = ".6";
+      time.style.marginTop = "2px";
+      if (createdAt) {
+        try { time.textContent = new Date(createdAt).toLocaleString(); } catch (e) {}
+      }
+
+      wrap.appendChild(a);
+      wrap.appendChild(time);
       box.appendChild(wrap);
       box.scrollTop = box.scrollHeight;
     }
@@ -87,17 +146,15 @@
     // Sayfa açılınca en alta kaydır
     box.scrollTop = box.scrollHeight;
 
-    // gönderme: sayfa yenilemeden
+    // Text gönderme (sayfa yenilemeden)
     form.addEventListener("submit", function (e) {
       e.preventDefault();
 
       const text = input.value.trim();
       if (!text) return;
 
-      // kendi ekranıma bas
-      appendMessage(text, true, new Date().toISOString());
+      appendText(text, true, new Date().toISOString());
 
-      // server'a gönder (DB kaydı server socket tarafında yapılacak)
       socket.emit("dm:send", {
         toUserId: otherId,
         fromUserId: myId,
@@ -108,11 +165,14 @@
       input.focus();
     });
 
-    // karşıdan gelen mesaj
+    // Karşıdan gelen mesajlar (text + image)
     socket.on("dm:new", function (payload) {
-      // sadece bu konuşmanın mesajıysa ekle
-      if (String(payload.fromUserId) === String(otherId)) {
-        appendMessage(payload.text, false, payload.createdAt);
+      if (String(payload.fromUserId) !== String(otherId)) return;
+
+      if (payload.type === "image" && payload.imageUrl) {
+        appendImage(payload.imageUrl, false, payload.createdAt);
+      } else if (payload.type === "text" && payload.text) {
+        appendText(payload.text, false, payload.createdAt);
       }
     });
   })();

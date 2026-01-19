@@ -4,7 +4,12 @@ const messageSchema = new mongoose.Schema(
   {
     sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     receiver: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    text: { type: String, required: true, trim: true, maxlength: 2000 },
+
+    type: { type: String, enum: ["text", "image"], default: "text" },
+
+    text: { type: String, trim: true, maxlength: 2000 },
+    imageUrl: { type: String, default: null },
+
     readAt: { type: Date, default: null },
   },
   { timestamps: true }
@@ -12,4 +17,4 @@ const messageSchema = new mongoose.Schema(
 
 messageSchema.index({ sender: 1, receiver: 1, createdAt: -1 });
 
-export default mongoose.model("Message", messageSchema);
+export default mongoose.models.Message || mongoose.model("Message", messageSchema);
