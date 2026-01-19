@@ -1,4 +1,8 @@
+
+
+
 <header class="header-area">
+  
   <style>
     /* ===== Mobil Menü (Hamburger) ===== */
     .site-navbar {
@@ -72,7 +76,7 @@
 }
 
   </style>
-
+  
   <div class="container-fluid">
     <div class="row">
 
@@ -99,10 +103,12 @@
               </li>
 
               <li><a class="<%= link === 'contact' && 'active' %>" href="/contact">Contact</a></li>
-
+              
               <% if (user) { %>
                 <li><a class="<%= link === 'users' && 'active' %>" href="/users">Users</a></li>
                 <li><a class="<%= link === 'dashboard' && 'active' %>" href="/users/dashboard">Dashboard</a></li>
+                <li><a class="<%= link === 'messages' && 'active' %>" href="/messages">Mesajlar</a></li>
+
                 <li><a href="/logout">Logout</a></li>
               <% } else { %>
                 <li><a class="<%= link === 'login' && 'active' %>" href="/login">Login</a></li>

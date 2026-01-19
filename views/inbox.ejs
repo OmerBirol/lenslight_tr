@@ -1,0 +1,23 @@
+<%- include("partials/_header") %>
+<%- include("partials/_menu") %>
+
+<div class="container" style="margin-top:40px; min-height:400px;">
+  <h2>Mesajlar</h2>
+
+  <% if (!chats || chats.length === 0) { %>
+    <p>Henüz mesaj yok.</p>
+  <% } else { %>
+    <ul>
+      <% chats.forEach(c => { %>
+        <li>
+          <a href="/messages/<%= c.other._id %>">
+            <strong><%= c.other.username %></strong><br>
+            <small><%= c.lastMessage.text %></small>
+          </a>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</div>
+
+<%- include("partials/_footer") %>
