@@ -1,53 +1,140 @@
-
-
 <header class="header-area">
-            <div class="container-fluid">
-               <div class="row ">
-                 
-                  <div class=" col-md-2 col-sm-3">
-                     <div class="logo">
-                        <a href="/">lens<br><span>light</span></a>
-                     </div>
-                  </div>
-                  <div class="col-md-8 col-sm-9">
-                     <div class="navbar-area">
-                        <nav class="site-navbar">
-                           <ul>
-                              <li><a class="<%= link === 'index' && 'active' %>" href="/">Home</a></li>
-                              <li><a class="<%= link === 'about' && 'active' %>" href="/about">About</a></li>
-                             
-                              <li>
-                              <a class="<%= link === 'photos' ? 'active' : '' %>" href="/photos">Photos</a>
-                              </li>
-                      
-                              <li><a class="<%= link === 'contact' && 'active' %>" href="/contact">Contact</a></li>
-                              <% if (user) { %>
-                                
-                                  <li><a class="<%= link === 'users' && 'active' %>" href="/users">Users</a></li>
-                                 <li><a class="<%= link === 'dashboard' && 'active' %>" href="/users/dashboard">Dashboard</a></li>
-                                 <li><a href="/logout">Logout</a></li>
-                              <% } else { %>
-                                 <li><a class="<%= link === 'login' && 'active' %>" href="/login">Login</a></li>
-                                  <li><a class="<%= link === 'register' && 'active' %>" href="/register">Register</a></li>
-                               <% }%>
+  <style>
+    /* ===== Mobil Menü (Hamburger) ===== */
+    .site-navbar {
+      position: relative;
+    }
 
-                              <!--               <li><a href="services.html">Services</a></li>
-              <li><a href="projects.html">Projects</a></li>
-              <li><a href="blog.html">Blog</a></li>
-              <li><a href="contact.html">Contact</a></li> -->
+    /* Hamburger buton */
+    .nav-toggler {
+      display: none;
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      font-size: 28px;
+      line-height: 1;
+      padding: 8px 10px;
+    }
+
+    /* Menü (desktop) */
+    .site-navbar ul {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    /* Mobil görünüm */
+    @media (max-width: 768px) {
+      /* Orta kolon genişliği mobilde sıkıntı çıkarmasın */
+      .header-area .col-md-8.col-sm-9 {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+      }
+
+      .nav-toggler {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Mobilde menü kapalıyken gizli */
+      .site-navbar ul {
+        display: none;
+        position: absolute;
+        top: 58px; /* header yüksekliğine göre gerekirse oynat */
+        right: 0;
+        left: 0;
+        background: #fff;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        border-top: 1px solid #eee;
+        z-index: 9999;
+      }
+
+      .site-navbar ul li a {
+        display: block;
+        padding: 14px 18px;
+        border-bottom: 1px solid #f2f2f2;
+      }
+
+      /* Açık hali */
+      .site-navbar.open ul {
+        display: flex;
+      }
+    }
+  </style>
+
+  <div class="container-fluid">
+    <div class="row">
+
+      <div class="col-md-2 col-sm-3">
+        <div class="logo">
+          <a href="/">lens<br><span>light</span></a>
+        </div>
+      </div>
+
+      <div class="col-md-8 col-sm-9">
+        <div class="navbar-area">
+          <nav class="site-navbar" id="siteNavbar">
+            <!-- ✅ Hamburger (mobil) -->
+            <button class="nav-toggler" type="button" id="navToggler" aria-label="Menu" aria-expanded="false">
+              ☰
+            </button>
+
+            <ul id="navMenu">
+              <li><a class="<%= link === 'index' && 'active' %>" href="/">Home</a></li>
+              <li><a class="<%= link === 'about' && 'active' %>" href="/about">About</a></li>
+
+              <li>
+                <a class="<%= link === 'photos' ? 'active' : '' %>" href="/photos">Photos</a>
+              </li>
+
+              <li><a class="<%= link === 'contact' && 'active' %>" href="/contact">Contact</a></li>
+
+              <% if (user) { %>
+                <li><a class="<%= link === 'users' && 'active' %>" href="/users">Users</a></li>
+                <li><a class="<%= link === 'dashboard' && 'active' %>" href="/users/dashboard">Dashboard</a></li>
+                <li><a href="/logout">Logout</a></li>
+              <% } else { %>
+                <li><a class="<%= link === 'login' && 'active' %>" href="/login">Login</a></li>
+                <li><a class="<%= link === 'register' && 'active' %>" href="/register">Register</a></li>
+              <% } %>
             </ul>
-            <!--             <button class="nav-toggler">
-              <span></span>
-            </button> -->
+
           </nav>
         </div>
       </div>
-      <!--       <div class=" col-md-2 di_none">
-        <ul class="email text_align_right">
-          <li><a href="Javascript:void(0)">Login</a></li>
-          <li><a href="Javascript:void(0)"><i class="fa fa-search" aria-hidden="true"></i></a></li>
-        </ul>
-      </div> -->
+
     </div>
   </div>
+
+  <script>
+    (function () {
+      const nav = document.getElementById("siteNavbar");
+      const btn = document.getElementById("navToggler");
+
+      if (!nav || !btn) return;
+
+      btn.addEventListener("click", () => {
+        nav.classList.toggle("open");
+        const expanded = btn.getAttribute("aria-expanded") === "true";
+        btn.setAttribute("aria-expanded", String(!expanded));
+      });
+
+      // Mobilde linke tıklayınca menü kapansın
+      nav.addEventListener("click", (e) => {
+        const isLink = e.target && e.target.tagName === "A";
+        if (isLink && nav.classList.contains("open")) {
+          nav.classList.remove("open");
+          btn.setAttribute("aria-expanded", "false");
+        }
+      });
+    })();
+  </script>
 </header>
