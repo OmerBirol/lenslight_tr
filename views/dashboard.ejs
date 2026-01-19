@@ -1,5 +1,56 @@
 <%- include("partials/_header") %>
 
+<style>
+  .avatar{
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  /* ✅ Bio kartı ortalı ve düzgün */
+  .bio-card{
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .bio-text{
+    margin: 0;
+    line-height: 1.7;
+    word-break: break-word;
+  }
+
+  .bio-editor{
+    margin-top: 18px;
+  }
+
+  .bio-editor textarea{
+    width: 100%;
+    min-height: 130px;
+    resize: vertical;
+  }
+
+  .bio-actions{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:16px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .hidden{
+    display:none !important;
+  }
+
+  /* Add New Photo ortalı ve biraz aşağıda */
+  .add-photo-wrap{
+  margin-top: 25px;      /* Edit Bio’nun altına gelsin */
+  margin-left: 437px;    /* Sağa kaydır */
+  text-align: left;      /* Kaydırma düzgün dursun */
+}
+</style>
+
 <!-- loader -->
 <div class="loader_bg">
   <div class="loader">
@@ -9,195 +60,309 @@
 <!-- end loader -->
 
 <%- include("partials/_menu", { link: "about" }) %>
-      <div class="customers">
-        <div class="container">
-          <div class="row">
-            <div class="col-md-12">
-              <div class="titlepage text_align_center">
-                
-                <h2>Welcome <%= user.username %></h2>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-12">
-              <div class="satteb text_align_center">
-                <p>fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that itfact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that itfact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that itfact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it</p>
-                <h3>The point of using </h3>
-                <i><img src="/images/custo.jpg" alt="#"/></i>
-              </div>
-            </div>
+
+<div class="customers">
+  <div class="container">
+
+    <div class="row">
+      <div class="col-md-12">
+        <div class="titlepage text_align_center">
+
+          <!-- ✅ AVATAR GÖSTER -->
+          <div class="text_align_center" style="margin-bottom:20px;">
+            <img
+              src="<%= user.avatar ? user.avatar : '/images/team1.jpg' %>"
+              alt="avatar"
+              class="avatar"
+            />
           </div>
 
-           <div class="row">
-            <div class="col-md-12 text_align_center">
-              <button data-toggle="modal" data-target=".bd-example-modal-lg" type="button"
-                style=" margin-top:100px; margin-left: 50%; transform: translateX(-50%);" class="read_more"
-                href="about.html">Add New Photo</button>
-            </div>
+          <!-- ✅ AVATAR DEĞİŞTİR BUTONU -->
+          <div class="text_align_center" style="margin-bottom: 15px;">
+            <button data-toggle="modal" data-target=".avatar-modal" type="button" class="read_more">
+              Change Profile Photo
+            </button>
           </div>
+
+          <h2>Welcome <%= user.username %></h2>
         </div>
       </div>
-      <!-- end customers  -->
-      <% if (photos.length> 0 ) { %>
-      <div class="gallery">
-         <div class="container_with">
-            <div class="row">
-               <div class="col-md-12">
-                  <div class="titlepage text_align_center">
-                     
-                     <h2>My Photos</h2>
-                  </div>
-               </div>
+    </div>
+
+    <!-- ✅ BIO KUTUSU (metin + textarea aynı kutuda) -->
+    <div class="row" style="margin-top: 10px;">
+      <div class="col-md-12">
+        <div class="satteb text_align_center bio-card">
+
+          <!-- BIO metni -->
+          <p class="bio-text" id="bioText">
+            <%= user.bio && user.bio.length > 0
+                ? user.bio
+                : "Henüz kendin hakkında bir şey yazmadın." %>
+          </p>
+
+          <!-- BIO editor (başta gizli) -->
+          <form id="bioForm" class="bio-editor hidden" action="/users/bio" method="POST">
+            <textarea
+              name="bio"
+              class="form_control"
+              placeholder="Kendin hakkında bir şeyler yaz..."
+            ><%= user.bio ? user.bio : "" %></textarea>
+
+            <div class="bio-actions">
+              <button type="button" class="read_more" id="cancelBioBtn">Cancel</button>
+              <button type="submit" class="read_more">Save Bio</button>
             </div>
-            <div class="tz-gallery">
-                     <div class="row">
+          </form>
 
-                        <% for(photo of photos){ %>
-                        <div class="col-lg-4 col-md-6 ma_bottom30">
-                           <div class="lightbox">
-                              <img src="<%= photo.url %>" alt="<%= photo.name %>">
-                              <div class="view_main">
-                                <div class="pose">
-                                <a class="read_more" href="/photos/<%= photo._id %>"><img src="/images/ga.png" alt="#"/></a>
-                                <h3 style="padding-top:10px; padding-bottom:10px">
-                                 <%= photo.name %>
-                                    </h3>
-                                    <p style="padding-top:10px;">
-                                       <%= photo.description.substring(0, 80)+ "..." %>
-                                    </p>
-                              </div>
-                              </div>
-                           </div>
-                        </div>
-                    <% } %>
+          <!-- ✅ Edit + Save (edit moduna geçiş) -->
+          <div class="bio-actions" id="bioButtons">
+            <button type="button" class="read_more" id="editBioBtn">Edit Bio</button>
+          </div>
 
+        </div>
+      </div>
+    </div>
 
+    <!-- ✅ Add New Photo (edit/save altında ortalı) -->
+    <div class="row">
+      <div class="col-md-12 add-photo-wrap">
+        <button
+          data-toggle="modal"
+          data-target=".bd-example-modal-lg"
+          type="button"
+          class="read_more"
+          
+        >
+          Add New Photo
+        </button>
+      </div>
+    </div>
 
-             
-               </div>
+  </div>
+</div>
+<!-- end customers  -->
+
+<% if (photos.length > 0) { %>
+<div class="gallery">
+  <div class="container_with">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="titlepage text_align_center">
+          <h2>My Photos</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="tz-gallery">
+      <div class="row">
+        <% for(photo of photos){ %>
+          <div class="col-lg-4 col-md-6 ma_bottom30">
+            <div class="lightbox">
+              <img src="<%= photo.url %>" alt="<%= photo.name %>">
+              <div class="view_main">
+                <div class="pose">
+                  <a class="read_more" href="/photos/<%= photo._id %>">
+                    <img src="/images/ga.png" alt="#"/>
+                  </a>
+                  <h3 style="padding-top:10px; padding-bottom:10px">
+                    <%= photo.name %>
+                  </h3>
+                  <p style="padding-top:10px;">
+                    <%= photo.description.substring(0, 80) + "..." %>
+                  </p>
+                </div>
+              </div>
             </div>
-         </div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+  </div>
+</div>
+<% } %>
+
+<% if (user.followers && user.followers.length > 0) { %>
+<div class="team">
+  <div class="container_with">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="titlepage text_align_center">
+          <h2>Followers</h2>
+        </div>
+      </div>
+
+      <% for(follower of user.followers){ %>
+      <div class="col-md-4">
+        <div class="team_box text_align_center">
+          <div class="team_img">
+            <figure>
+              <img src="<%= follower.avatar ? follower.avatar : '/images/team1.jpg' %>" alt="#"/>
+            </figure>
+          </div>
+          <div class="craig">
+            <h3><%= follower.username %></h3>
+            <span>PHOTOGRAPHER</span>
+            <ul class="social_icon ">
+              <li><a href="Javascript:void(0)"><i class="fa fa-facebook" aria-hidden="true"></i></a></li>
+              <li><a href="Javascript:void(0)"><i class="fa fa-twitter" aria-hidden="true"></i></a></li>
+              <li><a href="/users/<%= follower._id %>"><i class="fa fa-external-link-square" aria-hidden="true"></i></a></li>
+            </ul>
+          </div>
+        </div>
       </div>
       <% } %>
 
-      <% if (user.followers.length> 0 ) { %>
-      <div class="team">
-        <div class="container_with">
-           <div class="row">
-              <div class="col-md-12">
-                 <div class="titlepage text_align_center">
-                   
-                    <h2>Followers</h2>
-                 </div>
-              </div>
-              <% for(follower of user.followers){ %>
+    </div>
+  </div>
+</div>
+<% } %>
 
-              <div class="col-md-4">
-                 <div class="team_box text_align_center">
-                    <div class="team_img">
-                      <figure><img src="/images/team1.jpg" alt="#"/></figure>
-                    </div>
-                    <div class="craig">
-                      <h3><%= follower.username %></h3>
-                      <span>PHOTOGRAPHER</span>
-                      <ul class="social_icon ">
-                         <li><a href="Javascript:void(0)"><i class="fa fa-facebook" aria-hidden="true"></i></a></li>
-                         <li><a href="Javascript:void(0)"><i class="fa fa-twitter" aria-hidden="true"></i></a></li>
-                         <li><a href="/users/<%= follower._id %>"><i class="fa fa-external-link-square" aria-hidden="true"></i></a></li>
-                      </ul>
-                    </div>
-                 </div>
-              </div>
-              <% } %>
-
-           </div>
+<% if (user.followings && user.followings.length > 0) { %>
+<div class="team">
+  <div class="container_with">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="titlepage text_align_center">
+          <h2>Followings</h2>
         </div>
-     </div>
-     <% } %>
-     <% if (user.followings.length> 0 ) { %>
-     <div class="team">
-      <div class="container_with">
-         <div class="row">
-            <div class="col-md-12">
-               <div class="titlepage text_align_center">
-                 
-                  <h2>Followings</h2>
-               </div>
-            </div>
-            <% for(Followings of user.followings){ %>
-
-            <div class="col-md-4">
-               <div class="team_box text_align_center">
-                  <div class="team_img">
-                    <figure><img src="/images/team1.jpg" alt="#"/></figure>
-                  </div>
-                  <div class="craig">
-                    <h3><%= Followings.username %></h3>
-                    <span>PHOTOGRAPHER</span>
-                    <ul class="social_icon ">
-                       <li><a href="Javascript:void(0)"><i class="fa fa-facebook" aria-hidden="true"></i></a></li>
-                       <li><a href="Javascript:void(0)"><i class="fa fa-twitter" aria-hidden="true"></i></a></li>
-                       <li><a href="/users/<%= Followings._id %>"><i class="fa fa-external-link-square" aria-hidden="true"></i></a></li>
-                    </ul>
-                  </div>
-               </div>
-            </div>
-            <% } %>
-
-         </div>
       </div>
-   </div>
-   <% } %>
-      <div class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div style="margin-top: 50px; margin-bottom: 50px;" class="container">
-              <div class="row">
-                <div class="col-md-12 ">
-                  <div class="text_align_center">
-                    <h2 style="
-                    font-size: 30px;
-                    margin-bottom: 20px;
-                    color: #D43A8E;
-                ">Add New Photo</h2>
-                  </div>
-                </div>
-                <div class="col-md-10 offset-md-1">
-                  <form id="request" class="main_form" method="POST" action="/photos" enctype="multipart/form-data">
-                    <div class="row">
-                      <div class="col-md-12">
-                        <input class="form_control" placeholder="Name" type="text" name="name">
-                      </div>
-                      <div class="col-md-12">
-                        <textarea name="description" style="height: 150px;" class="form_control"
-                          placeholder="Description" rows="5"></textarea>
-                      </div>
 
-                      <div style="margin-bottom: 20px ;" class="col-md-12">
-                        <input type="file" name="image" class="form-control-file">
-                      </div>
-
-                      <div class="col-md-12">
-                        <div class="group_form">
-                          <button class="read_more">Upload File</button>
-                        </div>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
+      <% for(Followings of user.followings){ %>
+      <div class="col-md-4">
+        <div class="team_box text_align_center">
+          <div class="team_img">
+            <figure>
+              <img src="<%= Followings.avatar ? Followings.avatar : '/images/team1.jpg' %>" alt="#"/>
+            </figure>
+          </div>
+          <div class="craig">
+            <h3><%= Followings.username %></h3>
+            <span>PHOTOGRAPHER</span>
+            <ul class="social_icon ">
+              <li><a href="Javascript:void(0)"><i class="fa fa-facebook" aria-hidden="true"></i></a></li>
+              <li><a href="Javascript:void(0)"><i class="fa fa-twitter" aria-hidden="true"></i></a></li>
+              <li><a href="/users/<%= Followings._id %>"><i class="fa fa-external-link-square" aria-hidden="true"></i></a></li>
+            </ul>
           </div>
         </div>
       </div>
+      <% } %>
 
-      
+    </div>
+  </div>
+</div>
+<% } %>
+
+<!-- ✅ AVATAR UPLOAD MODAL -->
+<div class="modal fade avatar-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div style="margin-top: 50px; margin-bottom: 50px;" class="container">
+        <div class="row">
+          <div class="col-md-12 ">
+            <div class="text_align_center">
+              <h2 style="font-size: 30px; margin-bottom: 20px; color: #D43A8E;">
+                Change Profile Photo
+              </h2>
+            </div>
+          </div>
+
+          <div class="col-md-10 offset-md-1">
+            <form class="main_form" method="POST" action="/users/avatar" enctype="multipart/form-data">
+              <div class="row">
+                <div style="margin-bottom: 20px ;" class="col-md-12">
+                  <input type="file" name="avatar" accept="image/*" class="form-control-file" required>
+                </div>
+
+                <div class="col-md-12">
+                  <div class="group_form text_align_center">
+                    <button class="read_more" type="submit">Upload Avatar</button>
+                  </div>
+                </div>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXISTING PHOTO UPLOAD MODAL -->
+<div class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div style="margin-top: 50px; margin-bottom: 50px;" class="container">
+        <div class="row">
+          <div class="col-md-12 ">
+            <div class="text_align_center">
+              <h2 style="font-size: 30px; margin-bottom: 50px; color: #D43A8E;">
+                Add New Photo
+              </h2>
+            </div>
+          </div>
+          <div class="col-md-10 offset-md-1">
+            <form id="request" class="main_form" method="POST" action="/photos" enctype="multipart/form-data">
+              <div class="row">
+                <div class="col-md-12">
+                  <input class="form_control" placeholder="Name" type="text" name="name">
+                </div>
+                <div class="col-md-12">
+                  <textarea name="description" style="height: 150px;" class="form_control"
+                    placeholder="Description" rows="5"></textarea>
+                </div>
+
+                <div style="margin-bottom: 20px ;" class="col-md-12">
+                  <input type="file" name="image" class="form-control-file">
+                </div>
+
+                <div class="col-md-12">
+                  <div class="group_form text_align_center">
+                    <button class="read_more" type="submit">Upload File</button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const editBtn = document.getElementById("editBioBtn");
+  const cancelBtn = document.getElementById("cancelBioBtn");
+  const bioText = document.getElementById("bioText");
+  const bioForm = document.getElementById("bioForm");
+  const bioButtons = document.getElementById("bioButtons");
+
+  editBtn.addEventListener("click", () => {
+    bioText.classList.add("hidden");
+    bioButtons.classList.add("hidden");
+    bioForm.classList.remove("hidden");
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    bioForm.classList.add("hidden");
+    bioText.classList.remove("hidden");
+    bioButtons.classList.remove("hidden");
+  });
+</script>
 
 <%- include("partials/_footer") %>

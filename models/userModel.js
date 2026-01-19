@@ -39,18 +39,33 @@ const userSchema = new Schema({
           default: [],
         },
       ],
-},
+      avatar: {
+        type: String, // Cloudinary URL
+        default: "",
+      },
+      avatar_id: {
+        type: String, // Cloudinary public_id (silmek için)
+        default: "",
+      },
+      bio: {
+        type: String,
+        default: "",
+        maxlength: 500,
+      }
+    
+
+    },
 {
     timestamps:true,
 }
 
 );
-userSchema.pre("save",function(next){
-    const user=this
-    bcrypt.hash(user.password,10,(err,hash)=>{
-        user.password=hash;
-        next();
-    });
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+  
 });
 
 

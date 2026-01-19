@@ -1,5 +1,12 @@
 <%- include("partials/_header") %>
-
+<style>
+  .profile-photo {
+    width: 140px;          /* istediğin boyut */
+    height: 140px;
+    border-radius: 50%;    /* yuvarlak */
+    object-fit: cover;     /* taşma yok, kırpma var */
+  }
+</style>
 <!-- loader -->
 <div class="loader_bg">
   <div class="loader">
@@ -24,7 +31,14 @@
               <div class="satteb text_align_center">
                 <p>fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that itfact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that itfact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that itfact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it</p>
                 <h3>The point of using </h3>
-                <i><img src="/images/custo.jpg" alt="#"/></i>
+                <i>
+                  <img
+                    src="<%= user.avatar ? user.avatar : '/images/team1.jpg' %>"
+                    alt="#"
+                    class="profile-photo"
+                  />
+                </i>
+                
               </div>
             </div>
           </div>

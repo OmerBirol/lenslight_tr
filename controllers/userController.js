@@ -2,7 +2,8 @@ import User from "../models/userModel.js";
 import bcrypt from "bcrypt";
 import jwt from 'jsonwebtoken';
 import Photo from '../models/photoModel.js';
-
+import { v2 as cloudinary } from 'cloudinary';
+import fs from "fs";
 const createUser = async (req, res) => {
   try {
     const user = await User.create(req.body);
@@ -187,5 +188,56 @@ const unfollow = async (req, res) => {
   }
 };
 
+const uploadAvatar = async (req, res) => {
+  try {
+    // 1) Dosya var mı?
+    if (!req.files || !req.files.avatar) {
+      return res.status(400).json({ message: "Avatar dosyasi yok" });
+    }
 
-export{createUser,loginUser,getDashboardPage,getAllUsers,getAUser,follow,unfollow};
+    const user = await User.findById(res.locals.user._id);
+
+    // 2) Eski avatar varsa Cloudinary’den sil
+    if (user.avatar_id) {
+      await cloudinary.uploader.destroy(user.avatar_id);
+    }
+
+    // 3) Cloudinary upload
+    const result = await cloudinary.uploader.upload(
+      req.files.avatar.tempFilePath,
+      {
+        use_filename: true,
+        folder: "avatars", // ayrı klasör iyi olur
+      }
+    );
+
+    // 4) DB’ye kaydet
+    user.avatar = result.secure_url;   // ✅ BURASI
+    user.avatar_id = result.public_id;
+    await user.save();
+
+    // 5) temp dosyayı sil
+    fs.unlinkSync(req.files.avatar.tempFilePath);
+
+    return res.status(200).redirect("/users/dashboard"); // istersen json da dönebilirsin
+  } catch (error) {
+    return res.status(500).json({
+      succeded: false,
+      error: error.message,
+    });
+  }
+};
+const updateBio = async (req, res) => {
+  try {
+    const user = await User.findById(res.locals.user._id);
+    user.bio = req.body.bio;
+    await user.save();
+
+    res.redirect("/users/dashboard");
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+export{createUser,loginUser,getDashboardPage,getAllUsers,getAUser,follow,unfollow,uploadAvatar,updateBio};
