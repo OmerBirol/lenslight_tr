@@ -17,30 +17,37 @@
       <div style="font-weight:600; margin-bottom:8px;">
         Gruba Davet Et (sadece seni takip edenler)
       </div>
-  
+
       <% if (!eligibleUsers || eligibleUsers.length === 0) { %>
         <div style="opacity:.7;">Seni takip eden kimse yok.</div>
       <% } else { %>
         <div style="display:flex; flex-direction:column; gap:10px;">
           <% eligibleUsers.forEach(u => { %>
+            <% const st = (typeof inviteMap !== "undefined" && inviteMap) ? inviteMap[String(u._id)] : null; %>
+
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; border:1px solid #f1f1f1; padding:10px; border-radius:10px;">
               <div style="display:flex; align-items:center; gap:10px;">
                 <img src="<%= u.avatar || '/images/team1.jpg' %>" style="width:34px; height:34px; border-radius:50%; object-fit:cover;" />
                 <div><strong><%= u.username %></strong></div>
               </div>
-  
-              <form method="POST" action="/groups/<%= group._id %>/invite" style="margin:0;">
-                <input type="hidden" name="userId" value="<%= u._id %>"/>
-                <button type="submit" style="padding:8px 12px; border-radius:8px; border:0;">
-                  Davet Gönder
-                </button>
-              </form>
+
+              <% if (st === "pending") { %>
+                <span style="opacity:.7;">Beklemede</span>
+              <% } else { %>
+                <form method="POST" action="/groups/<%= group._id %>/invite" style="margin:0;">
+                  <input type="hidden" name="userId" value="<%= u._id %>"/>
+                  <button type="submit" style="padding:8px 12px; border-radius:8px; border:0;">
+                    <%= st === "declined" ? "Tekrar Davet Gönder" : "Davet Gönder" %>
+                  </button>
+                </form>
+              <% } %>
             </div>
           <% }) %>
         </div>
       <% } %>
     </div>
   <% } %>
+
   <div id="chatBox" style="margin-top:16px; border:1px solid #ddd; padding:10px; min-height:320px; border-radius:8px; overflow-y:auto;">
     <% if (!messages || messages.length === 0) { %>
       <p>Henüz mesaj yok.</p>
@@ -58,8 +65,9 @@
     <% }) %>
   </div>
 
-  <form method="POST" action="/groups/<%= group._id %>/messages" style="margin-top:10px; display:flex; gap:10px;">
+  <form id="groupChatForm" method="POST" action="/groups/<%= group._id %>/messages" style="margin-top:10px; display:flex; gap:10px;">
     <input
+      id="groupChatInput"
       name="text"
       placeholder="Gruba mesaj yaz..."
       required
@@ -72,3 +80,75 @@
 </div>
 
 <%- include("partials/_footer") %>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  (function () {
+    const socket = io();
+
+    const myId = "<%= me %>";
+    const groupId = "<%= group._id %>";
+
+    // online map (DM + invite için de kullanıyorsun)
+    socket.emit("auth", myId);
+
+    // ✅ grup odasına gir
+    socket.emit("group:join", { groupId });
+
+    const form = document.getElementById("groupChatForm");
+    const input = document.getElementById("groupChatInput");
+    const box = document.getElementById("chatBox");
+
+    function appendMessage(m) {
+      const wrap = document.createElement("div");
+      wrap.style.margin = "10px 0";
+      wrap.style.textAlign = (String(m.sender?._id) === String(myId)) ? "right" : "left";
+
+      const bubble = document.createElement("span");
+      bubble.style.display = "inline-block";
+      bubble.style.padding = "8px 12px";
+      bubble.style.borderRadius = "10px";
+      bubble.style.border = "1px solid #ccc";
+      bubble.style.maxWidth = "80%";
+
+      const uname = (m.sender && m.sender.username) ? m.sender.username : "user";
+      bubble.innerHTML = "<strong>" + uname + ":</strong> " + (m.text || "");
+
+      const time = document.createElement("div");
+      time.style.fontSize = "12px";
+      time.style.opacity = ".6";
+      time.style.marginTop = "2px";
+      try { time.textContent = new Date(m.createdAt).toLocaleString(); } catch(e) {}
+
+      wrap.appendChild(bubble);
+      wrap.appendChild(time);
+      box.appendChild(wrap);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // açılışta en alta kaydır
+    box.scrollTop = box.scrollHeight;
+
+    // ✅ yenilemeden gönder
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const text = (input.value || "").trim();
+      if (!text) return;
+
+      socket.emit("group:send", {
+        groupId,
+        fromUserId: myId,
+        text
+      });
+
+      input.value = "";
+      input.focus();
+    });
+
+    // ✅ yeni mesaj geldi
+    socket.on("group:new", function (m) {
+      if (String(m.conversation) !== String(groupId)) return;
+      appendMessage(m);
+    });
+  })();
+</script>
