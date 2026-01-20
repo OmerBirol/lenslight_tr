@@ -109,7 +109,8 @@
                 <li><a class="<%= link === 'dashboard' && 'active' %>" href="/users/dashboard">Dashboard</a></li>
                 <li><a class="<%= link === 'messages' && 'active' %>" href="/messages">Mesajlar</a></li>
                 <li><a class="<%= link === 'groups' && 'active' %>" href="/groups">Gruplar</a></li>
-                <li><a href="/invites">Davetler</a></li>
+                <li><a class="<%= link === 'invites' && 'active' %>" href="/invites">Davetler</a></li>
+
                 <li><a href="/logout">Logout</a></li>
               <% } else { %>
                 <li><a class="<%= link === 'login' && 'active' %>" href="/login">Login</a></li>

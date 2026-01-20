@@ -31,7 +31,7 @@ const emitRealtime = (req, toUserId, payload) => {
   }
 };
 
-// /messages -> konuşma listesi
+// /messages -> konuşma listesi (SADECE DM)
 export const getInbox = async (req, res) => {
   try {
     const user = requireUser(req, res);
@@ -39,7 +39,10 @@ export const getInbox = async (req, res) => {
 
     const me = user._id;
 
+    // ✅ SADECE DM MESAJLARI:
+    // receiver null olmayanlar + sender/receiver me olanlar
     const last = await Message.find({
+      receiver: { $ne: null },
       $or: [{ sender: me }, { receiver: me }],
     })
       .sort({ createdAt: -1 })
@@ -48,8 +51,14 @@ export const getInbox = async (req, res) => {
       .populate("receiver", "username");
 
     const map = new Map();
+
     for (const m of last) {
+      // güvenlik: populate gelmezse (user silindiyse) skip
+      if (!m.sender || !m.receiver) continue;
+
       const other = String(m.sender._id) === String(me) ? m.receiver : m.sender;
+      if (!other || !other._id) continue;
+
       if (!map.has(String(other._id))) {
         map.set(String(other._id), { other, lastMessage: m });
       }
@@ -84,6 +93,7 @@ export const getChat = async (req, res) => {
     if (!otherUser) return res.status(404).send("Kullanıcı bulunamadı");
 
     const messages = await Message.find({
+      receiver: { $ne: null }, // ✅ DM garantisi
       $or: [
         { sender: me, receiver: otherId },
         { sender: otherId, receiver: me },
@@ -180,12 +190,13 @@ export const sendImage = async (req, res) => {
       return res.status(400).send("Sadece JPG/PNG/WEBP yüklenebilir");
     }
 
-    // 5MB limit
-    if (file.size > 5 * 1024 * 1024) {
-      return res.status(400).send("Maksimum 5MB");
+    // ✅ Limit (istersen artır)
+    const MAX = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX) {
+      return res.status(400).send("Maksimum 10MB");
     }
 
-    // Cloudinary upload (useTempFiles:true sayesinde tempFilePath var)
+    // Cloudinary upload
     const upload = await cloudinary.uploader.upload(file.tempFilePath, {
       folder: "lenslight/messages",
       resource_type: "image",

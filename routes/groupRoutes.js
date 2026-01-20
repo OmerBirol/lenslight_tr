@@ -6,6 +6,8 @@ import {
   createGroup,
   getGroupChat,
   sendGroupMessage,
+  leaveGroup,
+  deleteGroup,
 } from "../controllers/groupController.js";
 
 const router = express.Router();
@@ -16,5 +18,6 @@ router.post("/groups", authenticateToken, createGroup);
 
 router.get("/groups/:id", authenticateToken, getGroupChat);
 router.post("/groups/:id/messages", authenticateToken, sendGroupMessage);
-
+router.post("/groups/:id/leave", leaveGroup);
+router.post("/groups/:id/delete", deleteGroup);
 export default router;

@@ -160,3 +160,75 @@ export const sendGroupMessage = async (req, res) => {
     return res.status(500).send("Mesaj gönderilemedi");
   }
 };
+// POST /groups/:id/leave
+export const leaveGroup = async (req, res) => {
+  try {
+    const me = requireUser(req, res);
+    if (!me) return res.status(401).send("Yetkisiz");
+
+    const group = await Conversation.findOne({
+      _id: req.params.id,
+      type: "group"
+    });
+
+    if (!group) {
+      return res.status(404).send("Grup bulunamadı");
+    }
+
+    // Üye mi kontrol
+    if (!group.members.includes(me._id)) {
+      return res.status(403).send("Bu grubun üyesi değilsin");
+    }
+
+    // Owner çıkamasın (en temiz senaryo)
+    if (group.owner.toString() === me._id.toString()) {
+      return res.status(400).send("Grup sahibi gruptan çıkamaz");
+    }
+
+    // Üyeden çıkar
+    group.members = group.members.filter(
+      id => id.toString() !== me._id.toString()
+    );
+
+    await group.save();
+
+    return res.redirect("/groups");
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send("Gruptan çıkılamadı");
+  }
+};
+export const deleteGroup = async (req, res) => {
+  try {
+    const me = requireUser(req, res);
+    if (!me) return res.status(401).send("Yetkisiz");
+
+    const group = await Conversation.findOne({
+      _id: req.params.id,
+      type: "group"
+    });
+
+    if (!group) {
+      return res.status(404).send("Grup bulunamadı");
+    }
+
+    // OWNER KONTROLÜ (EN ÖNEMLİ YER)
+    if (group.owner.toString() !== me._id.toString()) {
+      return res.status(403).send("Bu grubu silme yetkin yok");
+    }
+
+    // Mesajları sil
+    await Message.deleteMany({ conversation: group._id });
+
+    // Davetleri sil (varsa)
+    await GroupInvite.deleteMany({ group: group._id });
+
+    // Grubu sil
+    await Conversation.findByIdAndDelete(group._id);
+
+    return res.redirect("/groups");
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send("Grup silinemedi");
+  }
+};

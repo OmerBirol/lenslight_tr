@@ -5,11 +5,37 @@
   <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
     <h2 style="margin:0;"><%= group.name %></h2>
 
-    <% if (isOwner) { %>
-      <a href="/invites" style="padding:8px 12px; border:1px solid #ddd; border-radius:8px; text-decoration:none;">
-        Davetler
-      </a>
-    <% } %>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <% if (isOwner) { %>
+        <a href="/invites" style="padding:8px 12px; border:1px solid #ddd; border-radius:8px; text-decoration:none;">
+          Davetler
+        </a>
+      <% } %>
+
+      <!-- ✅ HERKES: Gruptan Çık -->
+      <form method="POST" action="/groups/<%= group._id %>/leave" style="margin:0;">
+        <button
+          type="submit"
+          style="padding:8px 12px; border-radius:8px; border:0; background:#f0ad4e; color:#fff; cursor:pointer;"
+          onclick="return confirm('Gruptan çıkmak istediğine emin misin?');"
+        >
+          Gruptan Çık
+        </button>
+      </form>
+
+      <!-- ✅ SADECE OWNER: Grubu Sil -->
+      <% if (isOwner) { %>
+        <form method="POST" action="/groups/<%= group._id %>/delete" style="margin:0;">
+          <button
+            type="submit"
+            style="padding:8px 12px; border-radius:8px; border:0; background:#d9534f; color:#fff; cursor:pointer;"
+            onclick="return confirm('Bu grubu silmek istediğine emin misin? Bu işlem geri alınamaz!');"
+          >
+            Grubu Sil
+          </button>
+        </form>
+      <% } %>
+    </div>
   </div>
 
   <% if (isOwner) { %>
@@ -56,7 +82,15 @@
     <% (messages || []).forEach(m => { %>
       <div style="margin:10px 0; text-align:<%= String(m.sender?._id || m.sender) === String(me) ? 'right' : 'left' %>;">
         <span style="display:inline-block; padding:8px 12px; border-radius:10px; border:1px solid #ccc; max-width:80%;">
-          <strong><%= m.sender?.username || 'user' %>:</strong> <%= m.text %>
+          <strong><%= m.sender?.username || 'user' %>:</strong>
+
+          <% if (m.type === "image" && m.imageUrl) { %>
+            <div style="margin-top:6px;">
+              <img src="<%= m.imageUrl %>" style="max-width:260px; border-radius:10px; border:1px solid #ccc;" />
+            </div>
+          <% } else { %>
+            <%= m.text %>
+          <% } %>
         </span>
         <div style="font-size:12px; opacity:.6; margin-top:2px;">
           <%= new Date(m.createdAt).toLocaleString() %>
@@ -77,6 +111,15 @@
     />
     <button type="submit" style="padding:10px 16px; border-radius:8px; border:0;">Gönder</button>
   </form>
+
+  <!-- ✅ FOTO GÖNDER -->
+  <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+    <input id="groupImageInput" type="file" accept="image/*" />
+    <button id="sendGroupImageBtn" type="button" style="padding:10px 16px; border-radius:8px; border:0;">
+      Foto Gönder
+    </button>
+    <div id="imgStatus" style="font-size:12px; opacity:.7;"></div>
+  </div>
 </div>
 
 <%- include("partials/_footer") %>
@@ -99,6 +142,11 @@
     const input = document.getElementById("groupChatInput");
     const box = document.getElementById("chatBox");
 
+    // ✅ foto elemanları
+    const imgInput = document.getElementById("groupImageInput");
+    const sendImgBtn = document.getElementById("sendGroupImageBtn");
+    const imgStatus = document.getElementById("imgStatus");
+
     function appendMessage(m) {
       const wrap = document.createElement("div");
       wrap.style.margin = "10px 0";
@@ -112,7 +160,16 @@
       bubble.style.maxWidth = "80%";
 
       const uname = (m.sender && m.sender.username) ? m.sender.username : "user";
-      bubble.innerHTML = "<strong>" + uname + ":</strong> " + (m.text || "");
+
+      if (m.type === "image" && m.imageUrl) {
+        bubble.innerHTML =
+          "<strong>" + uname + ":</strong>" +
+          "<div style='margin-top:6px;'>" +
+          "<img src='" + m.imageUrl + "' style='max-width:260px; border-radius:10px; border:1px solid #ccc;' />" +
+          "</div>";
+      } else {
+        bubble.innerHTML = "<strong>" + uname + ":</strong> " + (m.text || "");
+      }
 
       const time = document.createElement("div");
       time.style.fontSize = "12px";
@@ -129,7 +186,7 @@
     // açılışta en alta kaydır
     box.scrollTop = box.scrollHeight;
 
-    // ✅ yenilemeden gönder
+    // ✅ yenilemeden text gönder
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       const text = (input.value || "").trim();
@@ -145,10 +202,62 @@
       input.focus();
     });
 
+    // ✅ foto -> dataUrl
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onerror = reject;
+        r.onload = () => resolve(String(r.result || ""));
+        r.readAsDataURL(file);
+      });
+    }
+
+    // ✅ foto gönder
+    sendImgBtn.addEventListener("click", async () => {
+      try {
+        const file = imgInput.files && imgInput.files[0];
+        if (!file) return alert("Bir foto seç.");
+
+        // client-side limit (2.5MB)
+        if (file.size > 2.5 * 1024 * 1024) {
+          alert("Fotoğraf çok büyük (max ~2.5MB).");
+          return;
+        }
+
+        imgStatus.textContent = "Yükleniyor...";
+        sendImgBtn.disabled = true;
+
+        const dataUrl = await fileToDataUrl(file);
+
+        socket.emit("group:sendImage", {
+          groupId,
+          fromUserId: myId,
+          dataUrl
+        });
+
+        imgInput.value = "";
+      } catch (e) {
+        console.error(e);
+        alert("Foto okunamadı.");
+      } finally {
+        setTimeout(() => {
+          imgStatus.textContent = "";
+          sendImgBtn.disabled = false;
+        }, 600);
+      }
+    });
+
     // ✅ yeni mesaj geldi
     socket.on("group:new", function (m) {
       if (String(m.conversation) !== String(groupId)) return;
       appendMessage(m);
+    });
+
+    // (opsiyonel) hata mesajı
+    socket.on("group:error", function (p) {
+      alert((p && p.message) ? p.message : "Bir hata oluştu");
+      imgStatus.textContent = "";
+      sendImgBtn.disabled = false;
     });
   })();
 </script>

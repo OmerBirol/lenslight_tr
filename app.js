@@ -44,7 +44,9 @@ const server = http.createServer(app);
 // ✅ Socket.IO
 const io = new Server(server, {
   cors: { origin: true, credentials: true },
+  maxHttpBufferSize: 20 * 1024 * 1024, // ✅ 20MB (base64 şişmesi için pay bıraktık)
 });
+
 
 // ✅ online user map: userId -> socketId
 const onlineUsers = new Map();
@@ -103,7 +105,7 @@ io.on("connection", (socket) => {
     socket.join(String(groupId));
   });
 
-  // grup mesajı gönder (DB + yay)
+  // ✅ grup TEXT mesajı gönder (DB + yay)  <-- (SENDE EKSİKTİ, GERİ GELDİ)
   socket.on("group:send", async ({ groupId, fromUserId, text }) => {
     try {
       if (!groupId || !fromUserId || !text) return;
@@ -111,14 +113,20 @@ io.on("connection", (socket) => {
       const clean = String(text).trim();
       if (!clean) return;
 
-      // güvenlik: konuşma var mı + üye mi?
+      // güvenlik: grup var mı + üye mi?
       const conv = await Conversation.findById(groupId).select("members");
-      if (!conv) return;
+      if (!conv) {
+        socket.emit("group:error", { message: "Grup bulunamadı." });
+        return;
+      }
 
       const isMember = (conv.members || []).some(
         (m) => String(m) === String(fromUserId)
       );
-      if (!isMember) return;
+      if (!isMember) {
+        socket.emit("group:error", { message: "Bu gruba mesaj atma yetkin yok." });
+        return;
+      }
 
       // mesajı DB'ye kaydet
       const msg = await Message.create({
@@ -137,11 +145,90 @@ io.on("connection", (socket) => {
         conversation: String(groupId),
         text: msg.text,
         createdAt: msg.createdAt,
-        sender: { _id: String(fromUserId), username: senderUser?.username || "user" },
+        sender: {
+          _id: String(fromUserId),
+          username: senderUser?.username || "user",
+        },
         type: "text",
       });
     } catch (err) {
       console.error("group:send error:", err);
+      socket.emit("group:error", { message: "Mesaj gönderilemedi." });
+    }
+  });
+
+  // ✅ grup FOTO gönder (Cloudinary + DB + yay)
+  socket.on("group:sendImage", async ({ groupId, fromUserId, dataUrl }) => {
+    try {
+      if (!groupId || !fromUserId || !dataUrl) return;
+
+      // sadece image dataUrl kabul et
+      if (!String(dataUrl).startsWith("data:image/")) {
+        socket.emit("group:error", { message: "Sadece resim dosyası gönderebilirsin." });
+        return;
+      }
+
+      // ✅ FOTO BOYUT LİMİTİ (10MB)
+      const base64Part = String(dataUrl).split(",")[1] || "";
+      const approxBytes = Math.ceil((base64Part.length * 3) / 4);
+      const MAX = 10 * 1024 * 1024; // 👈 burayı 5/10/20 yapabilirsin
+
+      if (approxBytes > MAX) {
+        socket.emit("group:error", { message: "Fotoğraf çok büyük (max 10MB)." });
+        return;
+      }
+
+      // güvenlik: grup var mı + üye mi?
+      const conv = await Conversation.findById(groupId).select("members");
+      if (!conv) {
+        socket.emit("group:error", { message: "Grup bulunamadı." });
+        return;
+      }
+
+      const isMember = (conv.members || []).some(
+        (m) => String(m) === String(fromUserId)
+      );
+      if (!isMember) {
+        socket.emit("group:error", { message: "Bu gruba foto gönderme yetkin yok." });
+        return;
+      }
+
+      // Cloudinary upload
+      const uploadRes = await cloudinary.uploader.upload(dataUrl, {
+        folder: "lenslight/groups",
+        resource_type: "image",
+      });
+
+      const imageUrl = uploadRes.secure_url;
+
+      // mesajı DB'ye kaydet
+      const msg = await Message.create({
+        conversation: groupId,
+        sender: fromUserId,
+        type: "image",
+        imageUrl,
+        text: "",
+      });
+
+      // sender username
+      const senderUser = await User.findById(fromUserId).select("username");
+
+      // odadaki herkese yayınla
+      io.to(String(groupId)).emit("group:new", {
+        _id: String(msg._id),
+        conversation: String(groupId),
+        createdAt: msg.createdAt,
+        sender: {
+          _id: String(fromUserId),
+          username: senderUser?.username || "user",
+        },
+        type: "image",
+        imageUrl,
+        text: "",
+      });
+    } catch (err) {
+      console.error("group:sendImage error:", err);
+      socket.emit("group:error", { message: "Foto gönderilemedi." });
     }
   });
 
@@ -152,6 +239,7 @@ io.on("connection", (socket) => {
     }
   });
 });
+
 
 // express ayarları
 app.set("view engine", "ejs");
